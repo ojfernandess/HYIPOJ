@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import DashboardLayout from "../layout/DashboardLayout";
 import {
   Card,
   CardContent,
@@ -11,8 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -27,24 +30,27 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Slider } from "@/components/ui/slider";
 import {
+  HardHat,
   Bitcoin,
-  Cpu,
   Coins,
   Waves,
-  ArrowRight,
+  BarChart3,
   Calculator,
+  Check,
+  RefreshCw,
+  DollarSign,
+  Wallet,
+  AlertCircle,
   Info,
+  Cpu,
 } from "lucide-react";
-import DashboardLayout from "../layout/DashboardLayout";
 
 interface MiningPackage {
   id: string;
   name: string;
-  power: number; // GH/s
+  power: number;
   price: number;
   duration: number; // in days
   maintenance: number; // daily maintenance fee
@@ -153,6 +159,12 @@ const MiningPowerMarketplace = () => {
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
   const [purchaseQuantity, setPurchaseQuantity] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [userBalance, setUserBalance] = useState(2500);
+  const [purchaseMethod, setPurchaseMethod] = useState("deposit");
+  const [isReinvestDialogOpen, setIsReinvestDialogOpen] = useState(false);
+  const [reinvestAmount, setReinvestAmount] = useState(100);
 
   // Calculate estimated earnings based on selected package and cryptocurrency
   const calculateEarnings = (
@@ -213,15 +225,115 @@ const MiningPowerMarketplace = () => {
     return `${amount.toFixed(8)} ${symbol}`;
   };
 
+  // Handle package purchase
+  const handlePurchase = () => {
+    if (!selectedPackage) return;
+
+    setIsSubmitting(true);
+
+    // Simulate API call
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setIsPurchaseOpen(false);
+
+      // If using balance, deduct from user balance
+      if (
+        purchaseMethod === "balance" &&
+        selectedPackage.price * purchaseQuantity <= userBalance
+      ) {
+        setUserBalance(
+          (prev) => prev - selectedPackage.price * purchaseQuantity,
+        );
+      }
+
+      setSuccessMessage(
+        `Successfully purchased ${selectedPackage.power * purchaseQuantity} GH/s of mining power!`,
+      );
+      setTimeout(() => setSuccessMessage(null), 5000);
+      setSelectedPackage(null);
+    }, 1500);
+  };
+
+  // Handle custom package purchase
+  const handleCustomPurchase = () => {
+    setIsSubmitting(true);
+
+    // Calculate price based on custom power
+    const price = (customPower / 50) * 250;
+
+    // Simulate API call
+    setTimeout(() => {
+      setIsSubmitting(false);
+
+      // Deduct from user balance if sufficient
+      if (price <= userBalance) {
+        setUserBalance((prev) => prev - price);
+      }
+
+      setSuccessMessage(
+        `Successfully purchased ${customPower} GH/s of custom mining power!`,
+      );
+      setTimeout(() => setSuccessMessage(null), 5000);
+    }, 1500);
+  };
+
+  // Handle reinvestment
+  const handleReinvest = () => {
+    setIsSubmitting(true);
+
+    // Simulate API call
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setIsReinvestDialogOpen(false);
+
+      // Calculate GH/s gained (assuming $5 per GH/s)
+      const ghsGained = Math.round(reinvestAmount / 5);
+
+      // Deduct from user balance
+      setUserBalance((prev) => prev - reinvestAmount);
+
+      setSuccessMessage(
+        `Successfully reinvested $${reinvestAmount} and gained ${ghsGained} GH/s of mining power!`,
+      );
+      setTimeout(() => setSuccessMessage(null), 5000);
+    }, 1500);
+  };
+
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Mining Power Marketplace</h1>
-          <p className="text-muted-foreground mt-2">
-            Purchase mining power and start earning cryptocurrency rewards
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Mining Power Marketplace</h1>
+            <p className="text-muted-foreground mt-2">
+              Purchase mining power and start earning cryptocurrency rewards
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">Your Balance</p>
+              <p className="text-xl font-bold">${userBalance.toFixed(2)}</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Wallet className="h-4 w-4" />
+              <span>Deposit</span>
+            </Button>
+          </div>
         </div>
+
+        {successMessage && (
+          <Alert className="bg-green-50 border-green-200">
+            <Check className="h-4 w-4 text-green-600" />
+            <AlertTitle>Success</AlertTitle>
+            <AlertDescription className="text-green-700">
+              {successMessage}
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Tabs defaultValue="packages" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8">
@@ -318,6 +430,7 @@ const MiningPowerMarketplace = () => {
                       className="w-1/2"
                       onClick={() => {
                         setSelectedPackage(pkg);
+                        setPurchaseQuantity(1);
                         setIsPurchaseOpen(true);
                       }}
                     >
@@ -331,15 +444,15 @@ const MiningPowerMarketplace = () => {
 
           {/* Custom Mining Power Tab */}
           <TabsContent value="custom" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configure Custom Mining Power</CardTitle>
-                <CardDescription>
-                  Customize your mining power and contract duration
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configure Custom Mining Power</CardTitle>
+                  <CardDescription>
+                    Customize your mining power and contract duration
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-6">
                     <div className="space-y-2">
                       <div className="flex justify-between">
@@ -435,130 +548,196 @@ const MiningPowerMarketplace = () => {
                       </div>
                     </div>
                   </div>
+                </CardContent>
+                <CardFooter>
+                  <Button
+                    className="w-full"
+                    onClick={handleCustomPurchase}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      "Purchase Custom Mining Power"
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
 
-                  <div className="rounded-lg border p-6 space-y-6">
-                    <div>
-                      <h3 className="text-lg font-medium mb-2">
-                        Profitability Estimate
-                      </h3>
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className={`${selectedCrypto.color}`}>
-                          {selectedCrypto.icon}
-                        </div>
+              <div className="rounded-lg border p-6 space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium mb-2">
+                    Profitability Estimate
+                  </h3>
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className={`${selectedCrypto.color}`}>
+                      {selectedCrypto.icon}
+                    </div>
+                    <span className="font-medium">
+                      {selectedCrypto.name} ({selectedCrypto.symbol})
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Daily Earnings (Gross):
+                      </span>
+                      <div>
                         <span className="font-medium">
-                          {selectedCrypto.name} ({selectedCrypto.symbol})
+                          {formatCrypto(
+                            customPower * selectedCrypto.currentProfitability,
+                            selectedCrypto.symbol,
+                          )}
                         </span>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            Daily Earnings (Gross):
-                          </span>
-                          <div>
-                            <span className="font-medium">
-                              {formatCrypto(
-                                customPower *
-                                  selectedCrypto.currentProfitability,
-                                selectedCrypto.symbol,
-                              )}
-                            </span>
-                            <span className="text-xs text-muted-foreground ml-1">
-                              (≈{" "}
-                              {formatCurrency(
-                                customPower *
-                                  selectedCrypto.currentProfitability *
-                                  30000,
-                              )}
-                              )
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            Maintenance Fee:
-                          </span>
-                          <span className="font-medium text-red-500">
-                            {formatCurrency(customPower * 0.0004)}/day
-                          </span>
-                        </div>
-
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            Daily Earnings (Net):
-                          </span>
-                          <span className="font-medium text-green-600">
-                            {formatCurrency(
-                              customPower *
-                                selectedCrypto.currentProfitability *
-                                30000 -
-                                customPower * 0.0004,
-                            )}
-                            /day
-                          </span>
-                        </div>
-
-                        <div className="pt-2 border-t">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Total Contract Earnings:
-                            </span>
-                            <span className="font-medium text-green-600">
-                              {formatCurrency(
-                                (customPower *
-                                  selectedCrypto.currentProfitability *
-                                  30000 -
-                                  customPower * 0.0004) *
-                                  customDuration,
-                              )}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">ROI:</span>
-                          <span className="font-medium">
-                            {(
-                              (((customPower *
-                                selectedCrypto.currentProfitability *
-                                30000 -
-                                customPower * 0.0004) *
-                                customDuration) /
-                                ((customPower / 50) * 250)) *
-                              100
-                            ).toFixed(2)}
-                            %
-                          </span>
-                        </div>
-
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            Breakeven Period:
-                          </span>
-                          <span className="font-medium">
-                            {Math.ceil(
-                              ((customPower / 50) * 250) /
-                                (customPower *
-                                  selectedCrypto.currentProfitability *
-                                  30000 -
-                                  customPower * 0.0004),
-                            )}{" "}
-                            days
-                          </span>
-                        </div>
+                        <span className="text-xs text-muted-foreground ml-1">
+                          (≈{" "}
+                          {formatCurrency(
+                            customPower *
+                              selectedCrypto.currentProfitability *
+                              30000,
+                          )}
+                          )
+                        </span>
                       </div>
                     </div>
 
-                    <div className="pt-4">
-                      <Button className="w-full">
-                        Purchase Custom Mining Power
-                      </Button>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Maintenance Fee:
+                      </span>
+                      <span className="font-medium text-red-500">
+                        {formatCurrency(customPower * 0.0004)}/day
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Daily Earnings (Net):
+                      </span>
+                      <span className="font-medium text-green-600">
+                        {formatCurrency(
+                          customPower *
+                            selectedCrypto.currentProfitability *
+                            30000 -
+                            customPower * 0.0004,
+                        )}
+                        /day
+                      </span>
+                    </div>
+
+                    <div className="pt-2 border-t">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">
+                          Total Contract Earnings:
+                        </span>
+                        <span className="font-medium text-green-600">
+                          {formatCurrency(
+                            (customPower *
+                              selectedCrypto.currentProfitability *
+                              30000 -
+                              customPower * 0.0004) *
+                              customDuration,
+                          )}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">ROI:</span>
+                      <span className="font-medium">
+                        {(
+                          (((customPower *
+                            selectedCrypto.currentProfitability *
+                            30000 -
+                            customPower * 0.0004) *
+                            customDuration) /
+                            ((customPower / 50) * 250)) *
+                          100
+                        ).toFixed(2)}
+                        %
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Breakeven Period:
+                      </span>
+                      <span className="font-medium">
+                        {Math.ceil(
+                          ((customPower / 50) * 250) /
+                            (customPower *
+                              selectedCrypto.currentProfitability *
+                              30000 -
+                              customPower * 0.0004),
+                        )}{" "}
+                        days
+                      </span>
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+
+                <div className="pt-4 border-t">
+                  <h3 className="text-lg font-medium mb-4">
+                    Reinvest from Balance
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">
+                        Available Balance:
+                      </span>
+                      <span className="font-medium">
+                        ${userBalance.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Amount to Reinvest</Label>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="number"
+                          value={reinvestAmount}
+                          onChange={(e) =>
+                            setReinvestAmount(
+                              Math.min(
+                                userBalance,
+                                Math.max(50, parseFloat(e.target.value) || 0),
+                              ),
+                            )
+                          }
+                          min="50"
+                          max={userBalance}
+                          step="50"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Mining Power to Gain</Label>
+                      <div className="flex justify-between items-center rounded-md border p-3">
+                        <span className="text-muted-foreground">
+                          Estimated GH/s:
+                        </span>
+                        <span className="font-medium">
+                          {Math.round(reinvestAmount / 5)} GH/s
+                        </span>
+                      </div>
+                    </div>
+                    <Button
+                      className="w-full"
+                      onClick={() => setIsReinvestDialogOpen(true)}
+                      disabled={
+                        reinvestAmount < 50 || reinvestAmount > userBalance
+                      }
+                    >
+                      Reinvest Now
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
 
@@ -842,6 +1021,37 @@ const MiningPowerMarketplace = () => {
                   </div>
                 </div>
 
+                <div className="space-y-4">
+                  <Label>Payment Method</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button
+                      variant={
+                        purchaseMethod === "deposit" ? "default" : "outline"
+                      }
+                      className="justify-center"
+                      onClick={() => setPurchaseMethod("deposit")}
+                    >
+                      New Deposit
+                    </Button>
+                    <Button
+                      variant={
+                        purchaseMethod === "balance" ? "default" : "outline"
+                      }
+                      className="justify-center"
+                      onClick={() => setPurchaseMethod("balance")}
+                      disabled={
+                        userBalance <
+                        (selectedPackage?.price * purchaseQuantity || 0)
+                      }
+                    >
+                      Use Balance
+                      {userBalance <
+                        (selectedPackage?.price * purchaseQuantity || 0) &&
+                        " (Insufficient)"}
+                    </Button>
+                  </div>
+                </div>
+
                 <div className="rounded-lg border p-4 space-y-2">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">
@@ -890,6 +1100,19 @@ const MiningPowerMarketplace = () => {
                     </span>
                   </div>
                 </div>
+
+                {purchaseMethod === "balance" &&
+                  userBalance <
+                    (selectedPackage?.price * purchaseQuantity || 0) && (
+                    <Alert className="bg-yellow-50 border-yellow-200">
+                      <AlertCircle className="h-4 w-4 text-yellow-600" />
+                      <AlertTitle>Insufficient Balance</AlertTitle>
+                      <AlertDescription className="text-yellow-700">
+                        Your current balance is insufficient for this purchase.
+                        Please add funds or select a different payment method.
+                      </AlertDescription>
+                    </Alert>
+                  )}
               </div>
             )}
 
@@ -900,7 +1123,90 @@ const MiningPowerMarketplace = () => {
               >
                 Cancel
               </Button>
-              <Button>Complete Purchase</Button>
+              <Button
+                onClick={handlePurchase}
+                disabled={
+                  isSubmitting ||
+                  (purchaseMethod === "balance" &&
+                    userBalance <
+                      (selectedPackage?.price * purchaseQuantity || 0))
+                }
+              >
+                {isSubmitting ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Complete Purchase"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Reinvestment Dialog */}
+        <Dialog
+          open={isReinvestDialogOpen}
+          onOpenChange={setIsReinvestDialogOpen}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Reinvestment</DialogTitle>
+              <DialogDescription>
+                Review your reinvestment details
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="rounded-md border p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">
+                    Reinvestment Amount:
+                  </span>
+                  <span className="font-bold">${reinvestAmount}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">
+                    Mining Power to Gain:
+                  </span>
+                  <span className="font-medium">
+                    {Math.round(reinvestAmount / 5)} GH/s
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">
+                    Daily Profit Increase:
+                  </span>
+                  <span className="text-green-600">
+                    $
+                    {(
+                      Math.round(reinvestAmount / 5) *
+                      selectedCrypto.currentProfitability *
+                      30000
+                    ).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsReinvestDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleReinvest} disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Confirm Reinvestment"
+                )}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

@@ -67,7 +67,8 @@ const Sidebar = ({ className = "" }: SidebarProps) => {
   const { user, logout } = useAuth();
 
   // Check if user is admin (in a real app, this would be based on user roles)
-  const isAdmin = user?.email?.includes("admin") || false;
+  const isAdmin =
+    user?.role === "admin" || user?.email?.includes("admin") || false;
 
   return (
     <div
@@ -156,8 +157,11 @@ const Sidebar = ({ className = "" }: SidebarProps) => {
               <NavItem
                 icon={<ShieldAlert size={18} />}
                 label="Admin Panel"
-                href="/admin"
-                active={activePath === "/admin"}
+                href="/dashboard?tab=admin"
+                active={
+                  activePath === "/dashboard" &&
+                  location.search.includes("tab=admin")
+                }
               />
             </nav>
           </div>

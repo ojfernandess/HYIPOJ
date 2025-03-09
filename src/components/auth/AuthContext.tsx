@@ -20,9 +20,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,11 +42,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       // Check for admin credentials
-      if (email === "ojfernandes" && password === "Soberano200") {
+      if (
+        (email === "ojfernandes" || email === "admin") &&
+        password === "Soberano200"
+      ) {
         const adminUser: User = {
           id: "admin-" + Math.random().toString(36).substr(2, 9),
-          name: "OJ Fernandes",
-          email: "ojfernandes@admin.com",
+          name: email === "ojfernandes" ? "OJ Fernandes" : "Admin User",
+          email:
+            email === "ojfernandes"
+              ? "ojfernandes@admin.com"
+              : "admin@hyipplatform.com",
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=admin`,
           role: "admin",
         };
@@ -59,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         // Save admin user to localStorage
         localStorage.setItem("user", JSON.stringify(adminUser));
         setUser(adminUser);
-        navigate("/admin");
+        navigate("/dashboard?tab=admin");
         return;
       }
 
@@ -81,7 +85,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Save user to localStorage
       localStorage.setItem("user", JSON.stringify(mockUser));
       setUser(mockUser);
-      navigate("/dashboard");
+
+      // Redirect admin users to admin panel
+      if (isAdmin) {
+        navigate("/dashboard?tab=admin");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       setError("Failed to login. Please check your credentials.");
     } finally {
@@ -114,7 +124,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Save user to localStorage
       localStorage.setItem("user", JSON.stringify(mockUser));
       setUser(mockUser);
-      navigate("/dashboard");
+
+      // Redirect admin users to admin panel
+      if (isAdmin) {
+        navigate("/dashboard?tab=admin");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       setError("Failed to register. Please try again.");
     } finally {

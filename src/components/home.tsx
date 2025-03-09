@@ -1,35 +1,39 @@
-import React from "react";
+import React, { useEffect } from "react";
 import DashboardLayout from "./layout/DashboardLayout";
 import DashboardOverview from "./dashboard/DashboardOverview";
+import AdminDashboard from "./admin/AdminDashboard";
+import { useAuth } from "./auth/AuthContext";
+import { useLocation, useNavigate } from "react-router-dom";
 
-interface HomeProps {
-  username?: string;
-  userAvatar?: string;
-  totalBalance?: string;
-  activeInvestments?: string;
-  miningPower?: string;
-  affiliateEarnings?: string;
-}
+const Home = () => {
+  const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isAdmin = user?.role === "admin";
+  const searchParams = new URLSearchParams(location.search);
+  const tab = searchParams.get("tab");
 
-const Home = ({
-  username = "John Investor",
-  userAvatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=investment",
-  totalBalance = "$12,345.67",
-  activeInvestments = "$5,678.90",
-  miningPower = "125 GH/s",
-  affiliateEarnings = "$987.65",
-}: HomeProps) => {
+  // If user is admin and tab=admin, show admin dashboard
+  const showAdminDashboard = isAdmin && tab === "admin";
+
+  // Redirect non-admin users away from admin tab
+  useEffect(() => {
+    if (tab === "admin" && !isAdmin) {
+      navigate("/dashboard");
+    }
+  }, [tab, isAdmin, navigate]);
+
+  // Prevent duplicate rendering of admin dashboard
   return (
-    <DashboardLayout>
-      <DashboardOverview
-        username={username}
-        userAvatar={userAvatar}
-        totalBalance={totalBalance}
-        activeInvestments={activeInvestments}
-        miningPower={miningPower}
-        affiliateEarnings={affiliateEarnings}
-      />
-    </DashboardLayout>
+    <>
+      {showAdminDashboard ? (
+        <AdminDashboard />
+      ) : (
+        <DashboardLayout>
+          <DashboardOverview username={user?.name} userAvatar={user?.avatar} />
+        </DashboardLayout>
+      )}
+    </>
   );
 };
 

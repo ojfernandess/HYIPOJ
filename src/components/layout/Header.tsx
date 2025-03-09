@@ -97,7 +97,8 @@ const Header = ({
   // Use user data from auth context if available, otherwise use props
   const displayName = user?.name || username || "User";
   const avatarUrl = user?.avatar || userAvatar;
-  const isAdmin = user?.email?.includes("admin") || false;
+  const isAdmin =
+    user?.role === "admin" || user?.email?.includes("admin") || false;
 
   const unreadCount = notifications.filter(
     (notification) => !notification.read,
@@ -201,7 +202,7 @@ const Header = ({
                 </Link>
                 {isAdmin && (
                   <Link
-                    to="/admin"
+                    to="/dashboard?tab=admin"
                     className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -332,7 +333,7 @@ const Header = ({
             {isAdmin && (
               <DropdownMenuItem>
                 <Shield className="mr-2 h-4 w-4" />
-                <Link to="/admin">Admin Panel</Link>
+                <Link to="/dashboard?tab=admin">Admin Panel</Link>
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />

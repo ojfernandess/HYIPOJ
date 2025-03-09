@@ -10,9 +10,12 @@ const AdminLoginInfo = () => {
       <AlertDescription className="text-blue-700">
         <p>Use the following credentials to access the admin panel:</p>
         <p className="mt-2">
-          <strong>Username:</strong> ojfernandes
+          <strong>Username:</strong> admin
           <br />
           <strong>Password:</strong> Soberano200
+        </p>
+        <p className="mt-1 text-xs">
+          (You can also use ojfernandes/Soberano200)
         </p>
       </AlertDescription>
     </Alert>
